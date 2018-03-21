@@ -1,6 +1,7 @@
 from collections import deque
 import cv2 as cv
 import heapq as hp
+import sys
 
 class MazeImg:
     def load(self):
@@ -70,7 +71,6 @@ class Maze:
         m=img.width
         while i < n:
             while j < m:
-#TODO ovo radi, ali za svaki beli piksel pravi cvor, hocu da izbegnem to, smisljam efikasniji nacin
                 if mat[i][j] == 255:
                     adj_list["%d_%d" % (i,j)]=[]
                     if mat[i-1][j] == 255:
@@ -173,14 +173,15 @@ class Maze:
         for k,v in adj_list.items():
             adj_list[k]=list(zip(v,[1]*len(v)))
             
-        for k,v in adj_list.items():
-            print("{}:{}".format(k, v))
+#        for k,v in adj_list.items():
+#            print("{}:{}".format(k, v))
         return adj_list
 
 
     def __init__(self, path):
         self.img=MazeImg(path)
         self.adj_list=self.make_adj_list(self.img)
+
         self.h={}
 
 
@@ -215,11 +216,8 @@ class Maze:
         marked=[]
         marked.append(start)
 
-        korak=1
         while open_list:
             (tmp,val)=min(open_list.items(), key=lambda x: x[1])#uzimamo minimalni element iz otvorene liste
-            print("U koraku {} izabrao {} {} a lista je bila {}".format(korak, tmp, val, open_list))
-            korak+=1
             closed_list[tmp]=val #dodajemo cvor u zatvorenu listu(zavrsili smo sa njim)
             del open_list[tmp] #izbacujemo ga iz otvorene liste
             if tmp == stop:
@@ -270,3 +268,56 @@ class Maze:
 
             if has_unvisited == False:
                 path.pop()
+
+    def BFS(self, start, stop):#bojenje za ovo ne radi dobro zato sto ne daje cvorove redom
+        marked={}
+        marked[start]=True
+        path=deque()
+        path.append(start)
+        res=[]
+        while len(path)>0:
+            v=path.popleft()
+            res.append(v)
+            
+            if v == stop:
+                return res
+            
+            for (w, _) in self.adj_list[v]:
+                if w not in marked:
+                    marked[w]=True
+                    path.append(w)
+    def dijkstra(self, start, stop):
+
+        marked=[]
+        open_list={}
+        parents=dict([(v,None) for v in self.adj_list])
+
+        marked.append(start)
+
+        dist=dict([(v, float('inf')) for v in self.adj_list])
+        dist[start]=0
+
+        open_list[start]=dist[start]
+        while open_list:
+            (tmp,val)=min(open_list.items(), key=lambda x: x[1])#uzimamo minimalni element iz otvorene liste
+            del open_list[tmp] #izbacujemo ga iz otvorene liste
+            if tmp == stop:
+                path=deque([])
+                while parents[tmp]:
+                    path.appendleft(tmp)
+                    tmp=parents[tmp]
+                path.appendleft(start)
+                return list(path)
+
+            for v,w in self.adj_list[tmp]:
+                if v not in marked:
+                    marked.append(v)
+                    dist[v]=dist[tmp]+w
+                    open_list[v]=dist[v]
+                    parents[v]=tmp
+                elif v in open_list:#cvor je posecen vec i u otvorenoj je listi, gledamo da li moze bolje preko ovog cvora
+                    if dist[v] > dist[tmp]+w:#imamo bolji put
+                        dist[v]=dist[tmp]+w
+                        parents[v]=tmp
+                        open_list[v]=dist[v]#azuriramo vrednost u otvorenoj listi
+
