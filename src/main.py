@@ -1,12 +1,17 @@
 from maze import MazeImg
 from maze import Maze
 import cv2 as cv
-import sys, time
+import sys, time, os
 
 name=input("Ime slike u input folderu(sa ekstenzijom): ")
 
 solver=input("Resavac(DFS, BFS, astar, dijkstra): ")
 
+if not os.path.isdir("../output"):
+    if not os.path.exists("../output"): 
+        os.mkdir("../output")
+    else:
+        print("Ne mogu da napravim direktorijum ../output")
 
 pic_path="../input/" + name 
 
