@@ -18,14 +18,14 @@ class MazeImg:
         start=0
         finish=0
         
-        #TODO bolje?
-        #TODO moze jedna petlja?
-        while self.img[0][i] == 0 and i < self.width:
+        while self.img[0][i] == 0:
             i+=1
         start=i
+
         i=0
         while self.img[self.height-1][i] == 0:
             i+=1
+
         finish=i
 
         return (start, finish)
@@ -48,21 +48,26 @@ class MazeImg:
         cv.waitKey(0)
     
 class Maze:
-    def make_adj_list(self, img):
+
+    def stringit(self,x, y):
+        return "{}_{}".format(y,x)
+    
+    def old_adj_list(self, img):#stari algoritam za pravljenje liste, ostavljen radi poredjenja
         #img koji saljemo je klasa i ona ima polje img koje je bas slika(matrica)
 
         mat=img.img
+        start_x=img.start #kota starta
+        finish_x=img.finish #kota kraja
 
         adj_list={}
-        adj_list["%d_%d" % (0,img.start)]=[]
+        adj_list[self.stringit(start_x, 0)]=[]
         
-        n=img.width
-        m=img.height
-
         i=1
         j=1
-        #posto idem na dole i na desno, uvek proveravam samo 
-        #svor sa leve strane i cvbor iznad, tj povezujem unazad
+      #posto idem na dole i na desno, uvek proveravam samo 
+      #svor sa leve strane i cvbor iznad, tj povezujem unazad
+        n=img.height
+        m=img.width
         while i < n:
             while j < m:
 #TODO ovo radi, ali za svaki beli piksel pravi cvor, hocu da izbegnem to, smisljam efikasniji nacin
@@ -78,7 +83,97 @@ class Maze:
                 j+=1
             j=1
             i+=1
+        return adj_list
 
+    def make_adj_list(self, img):
+        #img koji saljemo je klasa i ona ima polje img koje je bas slika(matrica)
+
+        mat=img.img
+        start_x=img.start #kota starta
+        finish_x=img.finish #kota kraja
+
+        adj_list={}
+        adj_list[self.stringit(start_x, 0)]=[]
+        
+        w=img.width
+        h=img.height
+        
+        #Bolji algoritam za listu, pravi samo neophodne cvorove
+        x=1
+        y=1
+        top_nodes=[None]*w #bice korisceni za povezivanje gore-dole
+        top_nodes[start_x]=self.stringit(start_x, 0)
+
+        for y in range(1,h-1):#ako bude mnogo sporo ovo zameniti sa while petljom
+            prev=False
+            curr=False
+            nxt=(mat[y][1])>0 #Ne proveravamo 0 zato sto je to zid
+            
+            left_node=None
+
+            for x in range(1,w-1):
+                prev=curr
+                curr=nxt
+                nxt=(mat[y][x+1])>0
+                
+                n=None
+                
+                if curr == False:#Udarili smo u zid
+                    continue
+                
+                adj_list[self.stringit(x,y)]=[]
+
+                if prev == True:
+
+                    if nxt == True:
+                        #PATH PATH PATH
+                        if mat[y-1][x] > 0 or mat[y+1][x] > 0:#ako postoji put iznad ili ispod
+                            n=self.stringit(x,y)
+                            adj_list[n].append(left_node)#ova grana sigurno nece biti pozvana cim se dodje sa zida pa je ovo bezbedno TODO valjda
+                            adj_list[left_node].append(n)
+                            left_node=n
+
+                    else:
+                        #PATH PATH WALL
+                        n=self.stringit(x,y)
+                        adj_list[left_node].append(n)
+                        adj_list[n].append(left_node)
+                        left_node=None
+
+                else:
+
+                    if nxt == True:
+                        #WALL PATH PATH
+                        n=self.stringit(x,y)
+                        left_node=n
+                    else:
+                        #WALL PATH WALL
+                        #pravim cvor samo ako sam na kraju puta(nmg vise gore ili dole)
+                        if mat[y+1][x] == 0 or mat[y-1][x] == 0:
+                            n=self.stringit(x,y)
+
+                if n != None:#ako smo napravili cvor u ovoj iteraciji, gledamo da li ga povezujemo sa nekim gore
+                    if mat[y-1][x] > 0:#ako je iznad cisto
+                        tmp=top_nodes[x]
+                        adj_list[tmp].append(n)
+                        adj_list[n].append(tmp)
+                    elif mat[y+1][x] > 0:#ispod cist, stavljamo cvor za narednu vezu
+                        top_nodes[x]=n
+                    else:
+                        top_nodes[x]=None
+            
+        finish_str=img.finish_string
+        tmp=top_nodes[finish_x]
+        adj_list[tmp].append(finish_str)
+        adj_list[finish_str]=[tmp]
+
+
+        #dodajem tezine na grane, sve su tezine 1
+        for k,v in adj_list.items():
+            adj_list[k]=list(zip(v,[1]*len(v)))
+            
+#        for k,v in adj_list.items():
+#            print("{}:{}".format(k, v))
         return adj_list
 
 
@@ -146,3 +241,28 @@ class Maze:
         #izasli smo iz while petlje i nismo izasli, znacio nema puta
         print("Path not found")
         return []
+
+    def DFS(self, start, stop):
+
+        marked={}
+        marked[start] = True
+        path = [start]
+
+        while len(path) > 0:
+
+            v = path[-1]
+
+            if v == stop:
+                return path
+
+            has_unvisited = False
+
+            for (w, weight) in self.adj_list[v]:
+                if w not in marked:
+                    path.append(w)
+                    marked[w] = True
+                    has_unvisited = True
+                    break
+
+            if has_unvisited == False:
+                path.pop()
