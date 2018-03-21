@@ -1,9 +1,10 @@
 # MazeSolver
-# WORK IN PROGRESS
 ## For given image of a maze, output image with solution
 
-## Finds path using A*.
+Path finding using A*, Dijkstra's, DFS and BFS
 
-Soon some improvments to come.
+Python 3 required with OpenCV
 
-### For now, only images that have 1px field and wall width are supported
+Only mazes that have 1px wall and path width are supported
+
+
