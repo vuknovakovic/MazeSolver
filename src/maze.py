@@ -104,7 +104,7 @@ class Maze:
         top_nodes=[None]*w #bice korisceni za povezivanje gore-dole
         top_nodes[start_x]=self.stringit(start_x, 0)
 
-        for y in range(1,h-1):#ako bude mnogo sporo ovo zameniti sa while petljom
+        for y in range(1,h-1):
             prev=False
             curr=False
             nxt=(mat[y][1])>0 #Ne proveravamo 0 zato sto je to zid
@@ -129,7 +129,7 @@ class Maze:
                         #PATH PATH PATH
                         if mat[y-1][x] > 0 or mat[y+1][x] > 0:#ako postoji put iznad ili ispod
                             n=self.stringit(x,y)
-                            adj_list[n].append(left_node)#ova grana sigurno nece biti pozvana cim se dodje sa zida pa je ovo bezbedno TODO valjda
+                            adj_list[n].append(left_node)#ova grana sigurno nece biti pozvana cim se dodje sa zida pa je ovo bezbedno
                             adj_list[left_node].append(n)
                             left_node=n
 
@@ -157,6 +157,7 @@ class Maze:
                         tmp=top_nodes[x]
                         adj_list[tmp].append(n)
                         adj_list[n].append(tmp)
+                        top_nodes[x]=n
                     elif mat[y+1][x] > 0:#ispod cist, stavljamo cvor za narednu vezu
                         top_nodes[x]=n
                     else:
@@ -172,8 +173,8 @@ class Maze:
         for k,v in adj_list.items():
             adj_list[k]=list(zip(v,[1]*len(v)))
             
-#        for k,v in adj_list.items():
-#            print("{}:{}".format(k, v))
+        for k,v in adj_list.items():
+            print("{}:{}".format(k, v))
         return adj_list
 
 
@@ -214,11 +215,13 @@ class Maze:
         marked=[]
         marked.append(start)
 
-
+        korak=1
         while open_list:
             (tmp,val)=min(open_list.items(), key=lambda x: x[1])#uzimamo minimalni element iz otvorene liste
+            print("U koraku {} izabrao {} {} a lista je bila {}".format(korak, tmp, val, open_list))
+            korak+=1
             closed_list[tmp]=val #dodajemo cvor u zatvorenu listu(zavrsili smo sa njim)
-            del open_list[tmp] #izbacujemo ga iz otvorene liste TODO proveri ovo mozda mora posle
+            del open_list[tmp] #izbacujemo ga iz otvorene liste
             if tmp == stop:
                 path=deque([])
                 while parents[tmp]:
@@ -238,6 +241,7 @@ class Maze:
                         dist[v]=dist[tmp]+w
                         parents[v]=tmp
                         open_list[v]=dist[v]#azuriramo vrednost u otvorenoj listi
+                        
         #izasli smo iz while petlje i nismo izasli, znacio nema puta
         print("Path not found")
         return []
