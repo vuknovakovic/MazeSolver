@@ -2,7 +2,6 @@ from daedalus import Maze
 import cv2, os, sys
 
 args=sys.argv[1:]
-print args
 
 h=int(args[0])
 w=int(args[1])
@@ -15,15 +14,15 @@ maze=Maze(h,w)
 try:
     maze_type_method=getattr(maze, "create_" + maze_type)
 except AttributeError:        
-    sys.exit("Nema takve funkcije")
+    sys.exit("Method not found")
 
 
 maze_type_method()
 maze.save_bitmap(name)
 
-img=cv2.imread(name) #ucitavanje slike
-img=(255-img) #konvertovanje bele u crnu
-img=img[0:img.shape[0]-1, 0:img.shape[1]-1] #odesecanje dela slike koji smeta (generisan od strane pydaedalus)
+img=cv2.imread(name) #load image
+img=(255-img) #convert white to black and vice-versa
+img=img[0:img.shape[0]-1, 0:img.shape[1]-1] #clip unwanted part of image(vreated by daedalus)
 
 #
 #for i in range(0, img.shape[0]):

@@ -52,22 +52,21 @@ class Maze:
     def stringit(self,x, y):
         return "{}_{}".format(y,x)
 
-    def old_adj_list(self, img):#stari algoritam za pravljenje liste, ostavljen radi poredjenja
-        #img koji saljemo je klasa i ona ima polje img koje je bas slika(matrica)
+    def old_adj_list(self, img):#Old adj_list, here for testing purposes only
+        #img that is sent via arg is class MazeImg, real image is img field of that class
 
         mat=img.img
-        start_x=img.start #kota starta
-        finish_x=img.finish #kota kraja
+        start_x=img.start #start coords
+        finish_x=img.finish #finish coords
 
         adj_list={}
         adj_list[self.stringit(start_x, 0)]=[]
 
         i=1
         j=1
-      #posto idem na dole i na desno, uvek proveravam samo
-      #svor sa leve strane i cvbor iznad, tj povezujem unazad
         n=img.height
         m=img.width
+
         while i < n:
             while j < m:
                 if mat[i][j] == 255:
@@ -84,7 +83,7 @@ class Maze:
             i+=1
         return adj_list
 
-    def izracunaj_cenu(self, u, v):
+    def calculate_edge_weight(self, u, v):
         u = u.split("_") 
         v = v.split("_")
 
@@ -94,11 +93,11 @@ class Maze:
         return abs(u[0]-v[0]) + abs(u[1] - v[1])
 
     def make_adj_list(self, img):
-        #img koji saljemo je klasa i ona ima polje img koje je bas slika(matrica)
+        #img that is sent via arg is class MazeImg, real image is img field of that class
 
         mat=img.img
-        start_x=img.start #kota starta
-        finish_x=img.finish #kota kraja
+        start_x=img.start #start coords
+        finish_x=img.finish #finish coords
 
         adj_list={}
         adj_list[self.stringit(start_x, 0)]=[]
@@ -106,16 +105,15 @@ class Maze:
         w=img.width
         h=img.height
 
-        #Bolji algoritam za listu, pravi samo neophodne cvorove
         x=1
         y=1
-        top_nodes=[None]*w #bice korisceni za povezivanje gore-dole
+        top_nodes=[None]*w #Used for North-South edges
         top_nodes[start_x]=self.stringit(start_x, 0)
 
         for y in range(1,h-1):
             prev=False
             curr=False
-            nxt=(mat[y][1])>0 #Ne proveravamo 0 zato sto je to zid
+            nxt=(mat[y][1])>0 #0 means we hit wall, so we check for >0(path) 
 
             left_node=None
 
@@ -126,7 +124,7 @@ class Maze:
 
                 n=None
 
-                if curr == False:#Udarili smo u zid
+                if curr == False:#Hit wall
                     continue
 
                 adj_list[self.stringit(x,y)]=[]
@@ -135,13 +133,13 @@ class Maze:
 
                     if nxt == True:
                         #PATH PATH PATH
-                        if mat[y-1][x] > 0 or mat[y+1][x] > 0:#ako postoji put iznad ili ispod
+                        if mat[y-1][x] > 0 or mat[y+1][x] > 0:#if path above or below exists
                             n=self.stringit(x,y)
 
-                            cena=self.izracunaj_cenu(n, left_node)
+                            edge_weight=self.calculate_edge_weight(n, left_node)
 
-                            adj_list[n].append((left_node, cena))#ova grana sigurno nece biti pozvana cim se dodje sa zida pa je ovo bezbedno
-                            adj_list[left_node].append((n, cena))
+                            adj_list[n].append((left_node, edge_weight))#this branch won't be executed until we are on path, so this is safe
+                            adj_list[left_node].append((n, edge_weight))
 
                             left_node=n
 
@@ -149,10 +147,10 @@ class Maze:
                         #PATH PATH WALL
                         n=self.stringit(x,y)
 
-                        cena=self.izracunaj_cenu(n, left_node)
+                        edge_weight=self.calculate_edge_weight(n, left_node)
 
-                        adj_list[left_node].append((n,cena))
-                        adj_list[n].append((left_node,cena))
+                        adj_list[left_node].append((n,edge_weight))
+                        adj_list[n].append((left_node,edge_weight))
 
                         left_node=None
 
@@ -164,21 +162,21 @@ class Maze:
                         left_node=n
                     else:
                         #WALL PATH WALL
-                        #pravim cvor samo ako sam na kraju puta(nmg vise gore ili dole)
+                        #create node only if there is wall above or bellow us, otherwise no need to create
                         if mat[y+1][x] == 0 or mat[y-1][x] == 0:
                             n=self.stringit(x,y)
 
-                if n != None:#ako smo napravili cvor u ovoj iteraciji, gledamo da li ga povezujemo sa nekim gore
-                    if mat[y-1][x] > 0:#ako je iznad cisto
+                if n != None:#if node is created, check for Notrh-South edges
+                    if mat[y-1][x] > 0:#above is clear
                         tmp=top_nodes[x]
 
-                        cena=self.izracunaj_cenu(tmp, n)
+                        edge_weight=self.calculate_edge_weight(tmp, n)
 
-                        adj_list[tmp].append((n,cena))
-                        adj_list[n].append((tmp, cena))
+                        adj_list[tmp].append((n,edge_weight))
+                        adj_list[n].append((tmp, edge_weight))
 
                         top_nodes[x]=n
-                    elif mat[y+1][x] > 0:#ispod cist, stavljamo cvor za narednu vezu
+                    elif mat[y+1][x] > 0:#path bellow, set this node as top node for next time
                         top_nodes[x]=n
                     else:
                         top_nodes[x]=None
@@ -186,10 +184,10 @@ class Maze:
         finish_str=img.finish_string
         tmp=top_nodes[finish_x]
 
-        cena=self.izracunaj_cenu(finish_str, tmp)
+        edge_weight=self.calculate_edge_weight(finish_str, tmp)
 
-        adj_list[tmp].append((finish_str, cena))
-        adj_list[finish_str]=[(tmp, cena)]
+        adj_list[tmp].append((finish_str, edge_weight))
+        adj_list[finish_str]=[(tmp, edge_weight)]
 
 
 #        for k,v in adj_list.items():
@@ -200,13 +198,13 @@ class Maze:
     def __init__(self, path):
         self.img=MazeImg(path)
         self.adj_list=self.make_adj_list(self.img)
-#        self.adj_list=self.old_adj_list(self.img) #koristi se za svrhe debagovanja i poredjenja
+#        self.adj_list=self.old_adj_list(self.img) #uncomment if you want realy slow algorithm
 
 
         self.h={}
 
 
-    #menhetn rastojanje za heuristiku
+    #manhattan heuristic
     def manhattan(self, stop):
         start_time = time()
         tmp=stop.split("_")
@@ -215,15 +213,15 @@ class Maze:
 
 
         for v in self.adj_list:
-            tmp=v.split("_") #tmp[0] je x tmp[1] je y
+            tmp=v.split("_")
             v_x=int(tmp[0])
             v_y=int(tmp[1])
             self.h[v]=abs(stop_x-v_x) + abs(stop_y-v_y)
         
         end_time=time()
-        print("Manhattan: {}s".format(end_time - start_time))
+#        print("Manhattan: {}s".format(end_time - start_time))
 
-#euklidsko rastojanje za heuristiku
+#euclid heuristic
     def euclid(self, stop):
         start_time=time()
         tmp=stop.split("_")
@@ -232,16 +230,16 @@ class Maze:
         stop_y=int(tmp[1])
 
         for v in self.adj_list:
-            tmp=v.split("_") #tmp[0] je x tmp[1] je y
+            tmp=v.split("_")
             v_x=int(tmp[0])
             v_y=int(tmp[1])
             self.h[v]=int(((stop_x-v_x)**2 + (stop_y-v_y)**2)**(0.3))
 
         end_time=time()
-        print("Euklid: {}s".format(end_time - start_time))
+ #       print("Euclid: {}s".format(end_time - start_time))
 
     def astar(self, start, stop):
-        #TODO ostaje da se preko heap-a implementira otvorena lista
+        #TODO implement open_list using heap
 
         open_list={}
 
@@ -250,8 +248,8 @@ class Maze:
         dist=dict([(v, float('inf')) for v in self.adj_list])
         dist[start]=0
 
-        self.manhattan(stop) #heuristika je konzistentna pa dole necemo proveravati zatvorenu listu
- #       self.euclid(stop) #i ova je ali nije dovoljno dobra, spor je algoritam
+        self.manhattan(stop)
+ #       self.euclid(stop)
         open_list[start]=dist[start]+self.h[start]
 
         parents=dict([(v,None) for v in self.adj_list])
@@ -260,31 +258,38 @@ class Maze:
         marked.append(start)
 
         while open_list:
-            (tmp,val)=min(open_list.items(), key=lambda x: x[1])#uzimamo minimalni element iz otvorene liste
-            closed_list[tmp]=val #dodajemo cvor u zatvorenu listu(zavrsili smo sa njim)
-            del open_list[tmp] #izbacujemo ga iz otvorene liste
+            (tmp,val)=min(open_list.items(), key=lambda x: x[1])#take current minimum in open_list, add it to closed list and remove it from open_list
+            closed_list[tmp]=val 
+            del open_list[tmp]
+            
+            #if we found exit
             if tmp == stop:
                 path=deque([])
+
                 while parents[tmp]:
                     path.appendleft(tmp)
                     tmp=parents[tmp]
+
                 path.appendleft(start)
                 return list(path)
 
             for v,w in self.adj_list[tmp]:
                 if v not in marked:
                     marked.append(v)
+
                     dist[v]=dist[tmp]+w
                     open_list[v]=dist[v]+self.h[v]
+
                     parents[v]=tmp
+
                 elif v in open_list:
-                    if dist[v] > dist[tmp]+w:#imamo bolji put
+                    if dist[v] > dist[tmp]+w:#better path exists
                         dist[v]=dist[tmp]+w
                         parents[v]=tmp
-                        open_list[v]=dist[v]#azuriramo vrednost u otvorenoj listi
+                        open_list[v]=dist[v]#update value in open_list
 
 
-        #izasli smo iz while petlje i nismo izasli, znaci nema puta
+        #while loop ended, that means no path
         print("Path not found")
         return []
 
@@ -313,7 +318,7 @@ class Maze:
             if has_unvisited == False:
                 path.pop()
 
-    def BFS(self, start, stop):#bojenje za ovo ne radi dobro zato sto ne daje cvorove redom
+    def BFS(self, start, stop):#NOTE coloring won't work here and in DFS every time
         marked={}
         marked[start]=True
         path=deque()
@@ -330,6 +335,7 @@ class Maze:
                 if w not in marked:
                     marked[w]=True
                     path.append(w)
+
     def dijkstra(self, start, stop):
 
         marked=[]
@@ -343,8 +349,8 @@ class Maze:
 
         open_list[start]=dist[start]
         while open_list:
-            (tmp,val)=min(open_list.items(), key=lambda x: x[1])#uzimamo minimalni element iz otvorene liste
-            del open_list[tmp] #izbacujemo ga iz otvorene liste
+            (tmp,val)=min(open_list.items(), key=lambda x: x[1])
+            del open_list[tmp] 
             if tmp == stop:
                 path=deque([])
                 while parents[tmp]:
@@ -359,9 +365,9 @@ class Maze:
                     dist[v]=dist[tmp]+w
                     open_list[v]=dist[v]
                     parents[v]=tmp
-                elif v in open_list:#cvor je posecen vec i u otvorenoj je listi, gledamo da li moze bolje preko ovog cvora
-                    if dist[v] > dist[tmp]+w:#imamo bolji put
+                elif v in open_list:
+                    if dist[v] > dist[tmp]+w:
                         dist[v]=dist[tmp]+w
                         parents[v]=tmp
-                        open_list[v]=dist[v]#azuriramo vrednost u otvorenoj listi
+                        open_list[v]=dist[v]
 
