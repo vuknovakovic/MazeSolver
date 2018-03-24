@@ -254,11 +254,11 @@ class Maze:
 
         parents=dict([(v,None) for v in self.adj_list])
 
-        marked=[]
-        marked.append(start)
-
+        marked={}
+        marked[start]=True
         while open_list:
             (tmp,val)=min(open_list.items(), key=lambda x: x[1])#take current minimum in open_list, add it to closed list and remove it from open_list
+
             closed_list[tmp]=val 
             del open_list[tmp]
             
@@ -275,7 +275,7 @@ class Maze:
 
             for v,w in self.adj_list[tmp]:
                 if v not in marked:
-                    marked.append(v)
+                    marked[v]=True
 
                     dist[v]=dist[tmp]+w
                     open_list[v]=dist[v]+self.h[v]
