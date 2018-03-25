@@ -19,17 +19,31 @@ if not os.path.isdir("../output"):
         sys.exit("Unable to create directory: ../output")
 
 
+choice=""
 
-#os.system("python2 ./maze_generator.py 2000 2000 " + name + " perfect")
-#print("Generated image: " + name)
+def generate_image(name):
+    w=input("Enter width: ")
+    h=input("Enter height: ")
+    maze_type = input("Type of maze(braid|perfect|spiral|diagonal|braid_eller): ")
+    os.system("python2 ./maze_generator.py " + str(w) + " " + str(h) + " " + name + " " + maze_type)
+    print("\nGenerated image: " + name + "\n")
+
+if name in os.listdir("../input"):
+    print("Image with that name exists\nErase it and generate again?(y/N)",)
+    choice=input()
+
+    if choice.lower() == 'y':
+        os.system("rm ../input/" + name)
+        os.system("rm ../input/" + name[0:name.find(".")] + ".json")
+        generate_image(name)
+else:
+    generate_image(name)
 
 pic_path="../input/" + name 
 
-
-
-print("Generating graph")
+print("\nGenerating graph")
 maze=Maze(pic_path)
-print("Graph generated\nNumber of nodes: %d" % len(maze.adj_list))
+print("Graph generated\nNumber of nodes: %d\n\n" % len(maze.adj_list))
 
 try:
     solve_method=getattr(maze, solver)
@@ -45,10 +59,14 @@ start_time=time.time()
 
 solution=solve_method(maze.img.start_string, maze.img.finish_string)
 
+end_time=time.time()
 length=len(solution)
+
+print("Path length: " + str(length) + "\nRuntime: %g s" % (end_time - start_time))
+
 color=0
 
-print("Generetaing result image")
+print("Generetaing result image\n")
 
 for s in range(0,length-1):
     curr=solution[s].split("_")
@@ -57,7 +75,7 @@ for s in range(0,length-1):
     curr=[int(x) for x in curr]
     nxt=[int(x) for x in nxt]
     
-    color_to_apply=[0, 0 , 255-color] #set any color you like
+    color_to_apply=[color, 0 , 255-color] #set any color you like
 
     if curr[0]==nxt[0]:
         for x in range(min(curr[1], nxt[1]), max(curr[1], nxt[1])):
@@ -68,11 +86,8 @@ for s in range(0,length-1):
 
     color+=255/length
 
-end_time=time.time()
 
-print("Path length: " + str(length) + "\nRuntime: %g s" % (end_time - start_time))
 name_no_ext=name[0:name.find(".")]
-
 
 res_path=name_no_ext + "_" + solver + "_res.png"
 print("Saving image: " + res_path)

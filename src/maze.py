@@ -2,14 +2,14 @@ from collections import deque
 import cv2 as cv
 from time import time
 import heapq as hp
-import sys
+import sys, json, os
 
 class MazeImg:
     def load(self):
-        
+
         gray = cv.cvtColor(cv.imread(self.path), cv.COLOR_BGR2GRAY)
         ret,thresh = cv.threshold(gray,100,255,cv.THRESH_BINARY)
-        
+
         return thresh
 
     def start_finish(self):
@@ -84,7 +84,7 @@ class Maze:
         return adj_list
 
     def calculate_edge_weight(self, u, v):
-        u = u.split("_") 
+        u = u.split("_")
         v = v.split("_")
 
         u=[int(x) for x in u]
@@ -92,7 +92,7 @@ class Maze:
 
         return abs(u[0]-v[0]) + abs(u[1] - v[1])
 
-    def make_adj_list(self, img):
+    def make_adj_list(self, img, name_json):
         #img that is sent via arg is class MazeImg, real image is img field of that class
 
         mat=img.img
@@ -113,7 +113,7 @@ class Maze:
         for y in range(1,h-1):
             prev=False
             curr=False
-            nxt=(mat[y][1])>0 #0 means we hit wall, so we check for >0(path) 
+            nxt=(mat[y][1])>0 #0 means we hit wall, so we check for >0(path)
 
             left_node=None
 
@@ -192,17 +192,44 @@ class Maze:
 
 #        for k,v in adj_list.items():
 #            print("{}:{}".format(k, v))
+
+        with open (name_json, "w") as f:
+            print("Saving graph to: " + name_json)
+            json.dump(adj_list, f)
         return adj_list
 
 
     def __init__(self, path):
         self.img=MazeImg(path)
-        self.adj_list=self.make_adj_list(self.img)
+        name_no_ext=path[0:path.rfind(".")]
+        name_json=name_no_ext + ".json"
+        if name_json[name_json.rfind("/")+1:] not in os.listdir("../input"):
+            self.adj_list=self.make_adj_list(self.img, name_json)
+        else:
+            print("loading from json")
+            with open(name_json, "r") as f:
+                self.adj_list=json.load(f)
 #        self.adj_list=self.old_adj_list(self.img) #uncomment if you want realy slow algorithm
 
 
         self.h={}
 
+    #chebyshev heuristic
+    def chebyshev(self, stop):
+        start_time = time()
+        tmp=stop.split("_")
+        stop_x=int(tmp[0])
+        stop_y=int(tmp[1])
+
+
+        for v in self.adj_list:
+            tmp=v.split("_")
+            v_x=int(tmp[0])
+            v_y=int(tmp[1])
+            self.h[v]=max(abs(stop_x-v_x), abs(stop_y-v_y))
+
+        end_time=time()
+        print("Chebyshev: {}s".format(end_time - start_time))
 
     #manhattan heuristic
     def manhattan(self, stop):
@@ -217,9 +244,9 @@ class Maze:
             v_x=int(tmp[0])
             v_y=int(tmp[1])
             self.h[v]=abs(stop_x-v_x) + abs(stop_y-v_y)
-        
+
         end_time=time()
-#        print("Manhattan: {}s".format(end_time - start_time))
+        print("Manhattan: {}s".format(end_time - start_time))
 
 #euclid heuristic
     def euclid(self, stop):
@@ -236,20 +263,20 @@ class Maze:
             self.h[v]=int(((stop_x-v_x)**2 + (stop_y-v_y)**2)**(0.3))
 
         end_time=time()
- #       print("Euclid: {}s".format(end_time - start_time))
+        print("Euclid: {}s".format(end_time - start_time))
 
     def astar(self, start, stop):
         #TODO implement open_list using heap
 
         open_list={}
-
-        closed_list={}
+        #closed_list={}
 
         dist=dict([(v, float('inf')) for v in self.adj_list])
         dist[start]=0
 
         self.manhattan(stop)
- #       self.euclid(stop)
+#        self.euclid(stop)
+#        self.chebyshev(stop)
         open_list[start]=dist[start]+self.h[start]
 
         parents=dict([(v,None) for v in self.adj_list])
@@ -259,9 +286,9 @@ class Maze:
         while open_list:
             (tmp,val)=min(open_list.items(), key=lambda x: x[1])#take current minimum in open_list, add it to closed list and remove it from open_list
 
-            closed_list[tmp]=val 
+            #closed_list[tmp]=val
             del open_list[tmp]
-            
+
             #if we found exit
             if tmp == stop:
                 path=deque([])
@@ -337,20 +364,20 @@ class Maze:
                     path.append(w)
 
     def dijkstra(self, start, stop):
-
-        marked=[]
+        marked={}
         open_list={}
         parents=dict([(v,None) for v in self.adj_list])
 
-        marked.append(start)
+        marked[start]=True
 
         dist=dict([(v, float('inf')) for v in self.adj_list])
         dist[start]=0
 
+
         open_list[start]=dist[start]
         while open_list:
             (tmp,val)=min(open_list.items(), key=lambda x: x[1])
-            del open_list[tmp] 
+            del open_list[tmp]
             if tmp == stop:
                 path=deque([])
                 while parents[tmp]:
@@ -361,7 +388,7 @@ class Maze:
 
             for v,w in self.adj_list[tmp]:
                 if v not in marked:
-                    marked.append(v)
+                    marked[v]=True
                     dist[v]=dist[tmp]+w
                     open_list[v]=dist[v]
                     parents[v]=tmp
@@ -370,4 +397,3 @@ class Maze:
                         dist[v]=dist[tmp]+w
                         parents[v]=tmp
                         open_list[v]=dist[v]
-
