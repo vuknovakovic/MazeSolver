@@ -75,7 +75,7 @@ for s in range(0,length-1):
     curr=[int(x) for x in curr]
     nxt=[int(x) for x in nxt]
     
-    color_to_apply=[color, 0 , 255-color] #set any color you like
+    color_to_apply=[100*(1-color) + 30*color, 200*(1-color) + 20*color, 255*(1-color) + 40*color] #set any color you like
 
     if curr[0]==nxt[0]:
         for x in range(min(curr[1], nxt[1]), max(curr[1], nxt[1])):
@@ -84,7 +84,7 @@ for s in range(0,length-1):
         for y in range(min(curr[0], nxt[0]), max(curr[0], nxt[0])+1):
             pic_res[y][curr[1]]=color_to_apply
 
-    color+=255/length
+    color+=1/length
 
 
 name_no_ext=name[0:name.find(".")]
