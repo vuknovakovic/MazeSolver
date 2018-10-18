@@ -24,7 +24,7 @@ choice=""
 def generate_image(name):
     w=input("Enter width: ")
     h=input("Enter height: ")
-    maze_type = input("Type of maze(braid|perfect|spiral|diagonal|braid_eller): ")
+    maze_type = input("Type of maze(braid|perfect|spiral|unicursal|diagonal|braid_eller): ")
     os.system("python2 ./maze_generator.py " + str(w) + " " + str(h) + " " + name + " " + maze_type)
     print("\nGenerated image: " + name + "\n")
 
